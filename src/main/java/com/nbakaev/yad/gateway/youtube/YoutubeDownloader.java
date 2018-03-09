@@ -17,6 +17,7 @@ public class YoutubeDownloader {
 
     public YoutubeDownloader() {
         // TODO: check if youtube-dl in PATH
+        // tested on youtube-dl  >youtube-dl --version //2018.03.03
         progressPattern = Pattern.compile("\\[download\\]\\s+(?<percentage>\\d+(?:\\.\\d+)?%)\\s+of\\s+(?<size>\\d+(?:\\.\\d+)?(?:K|M|G)iB)(?:\\s+at\\s+(?<speed>\\d+(?:\\.\\d+)?(?:K|M|G)iB\\/s))?(?:\\s+ETA\\s+(?<eta>[\\d]{2}:[\\d]{2}))?");
     }
 
@@ -35,7 +36,7 @@ public class YoutubeDownloader {
                 objects.add("https://www.youtube.com/watch?v=" + id);
 
                 ProcessBuilder processBuilder = new ProcessBuilder(objects);
-                Process p = (Process) processBuilder.start();
+                Process p = processBuilder.start();
 //            System.out.println(p.getPid());
                 InputStream inputStream = p.getInputStream();
 
@@ -63,8 +64,6 @@ public class YoutubeDownloader {
                         youtubeUploadStatus.setMsg(size);
                         sink.next(youtubeUploadStatus);
                     }
-
-//                    logger.debug(new String(buffer));
                 }
 
                 p.waitFor();
