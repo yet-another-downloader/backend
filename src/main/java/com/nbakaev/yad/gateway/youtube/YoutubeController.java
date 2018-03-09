@@ -11,9 +11,11 @@ import reactor.core.publisher.Mono;
 public class YoutubeController {
 
     private final YoutubeRepository youtubeRepository;
+    private final YoutubeDownloader youtubeDownloader;
 
-    public YoutubeController(YoutubeRepository youtubeRepository) {
+    public YoutubeController(YoutubeRepository youtubeRepository, YoutubeDownloader youtubeDownloader) {
         this.youtubeRepository = youtubeRepository;
+        this.youtubeDownloader = youtubeDownloader;
     }
 
     @PostMapping("")
@@ -29,6 +31,11 @@ public class YoutubeController {
     @GetMapping("/person/{id}")
     Mono<YoutubeItemDto> findById(@PathVariable String id) {
         return this.youtubeRepository.findOneById(id).map(this::mapYoutubeItemDboToDto);
+    }
+
+    @GetMapping(value = "/download_video/{id}", produces = "application/stream+json")
+    Flux<YoutubeUploadStatus> downloadVideo(@PathVariable String id) {
+        return this.youtubeDownloader.downloadVideo(id);
     }
 
     private YoutubeItemDto mapYoutubeItemDboToDto(YoutubeItemDbo dbo) {
