@@ -45,6 +45,11 @@ public class YoutubeController {
         dto.setName(dbo.getName());
         dto.setImg(dbo.getImg());
         dto.setUrl(dbo.getUrl());
+        dto.setStatus(dbo.getStatus());
+        dto.setUploadedPercentage(dbo.getUploadedPercentage());
+        dto.setPartUrl(dbo.getPartUrl());
+        dto.setCreatedDate(dbo.getCreatedDate());
+        dto.setLastUpdateDate(dbo.getLastUpdateDate());
 
         return dto;
     }
@@ -59,6 +64,11 @@ public class YoutubeController {
         dbo.setName(dto.getName());
         dbo.setImg(dto.getImg());
         dbo.setUrl(dto.getUrl());
+        dbo.setPartUrl(dto.getPartUrl());
+        dbo.setStatus(dto.getStatus());
+        dbo.setUploadedPercentage(dto.getUploadedPercentage());
+        dbo.setCreatedDate(dto.getCreatedDate());
+        dbo.setLastUpdateDate(dto.getLastUpdateDate());
 
         return dbo;
     }

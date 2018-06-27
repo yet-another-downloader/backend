@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.server.WebFilter;
 
+import java.util.List;
+
 @Configuration
 public class WebFilterConfiuration {
 
@@ -27,7 +29,10 @@ public class WebFilterConfiuration {
 //            }
 
             // CORS, allow all use our API via Ajax
-            response.getHeaders().add("Access-Control-Allow-Origin", exchange.getRequest().getHeaders().get("Origin").get(0));
+            List<String> list = exchange.getRequest().getHeaders().get("Origin");
+            if (list != null && list.size() > 0) {
+                response.getHeaders().add("Access-Control-Allow-Origin", list.get(0));
+            }
             return chain.filter(exchange);
         };
     }

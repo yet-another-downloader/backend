@@ -4,6 +4,8 @@ import lombok.Data;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 
+import java.time.LocalDateTime;
+
 @Data
 public class YoutubeItemDbo {
 
@@ -14,7 +16,19 @@ public class YoutubeItemDbo {
 
     private String url;
 
+    private String partUrl;
+
+    private String status;
+
+    private String type;
+
+    private double uploadedPercentage;
+
     private String img;
+
+    private LocalDateTime createdDate;
+
+    private LocalDateTime lastUpdateDate;
 
 
 }

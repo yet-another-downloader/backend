@@ -1,7 +1,8 @@
 package com.nbakaev.yad.gateway.youtube;
 
 import lombok.Data;
-import org.bson.types.ObjectId;
+
+import java.time.LocalDateTime;
 
 @Data
 public class YoutubeItemDto {
@@ -12,6 +13,16 @@ public class YoutubeItemDto {
 
     private String url;
 
+    private String partUrl;
+
+    private String status;
+
     private String img;
+
+    private double uploadedPercentage;
+
+    private LocalDateTime createdDate;
+
+    private LocalDateTime lastUpdateDate;
 
 }
