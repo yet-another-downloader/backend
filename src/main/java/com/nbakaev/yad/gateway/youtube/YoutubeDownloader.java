@@ -1,8 +1,10 @@
 package com.nbakaev.yad.gateway.youtube;
 
+import com.nbakaev.yad.gateway.download.*;
+import com.nbakaev.yad.gateway.download.dto.DownloadRequestDto;
+import com.nbakaev.yad.gateway.download.dto.DownloadUploadStatusDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -15,18 +17,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
-public class YoutubeDownloader {
+public class YoutubeDownloader implements GenericDownloader {
+
+    private static final String DOWNLOAD_TYPE_YOUTUBE = "YOUTUBE";
 
     private final Pattern progressPattern;
     private final String outputPath;
     private static final Logger logger = LoggerFactory.getLogger(YoutubeDownloader.class);
 
-    private final YoutubeRepository youtubeRepository;
+    private final DownloadRepository downloadRepository;
 
-    public YoutubeDownloader(@Value("${yad.youtube.path-download}") String outputPath, YoutubeRepository youtubeRepository) throws IOException, InterruptedException {
+    public YoutubeDownloader(YoutubePropertyConfiguration config, DownloadRepository downloadRepository) throws IOException, InterruptedException {
 
-        this.outputPath = outputPath;
-        this.youtubeRepository = youtubeRepository;
+        this.outputPath = config.getPathDownload();
+        this.downloadRepository = downloadRepository;
         logger.info("Default output path for Youtube {}", this.outputPath);
 
         // TODO: if youtube-dl in PATH
@@ -51,15 +55,17 @@ public class YoutubeDownloader {
        return  "https://www.youtube.com/watch?v=" + id;
     }
 
-    public Flux<YoutubeUploadStatus> downloadVideo(String id) {
-        YoutubeItemDbo item = new YoutubeItemDbo();
-        item.setStatus("CREATED");
-        item.setType("YOUTUBE");
+    @Override
+    public Flux<DownloadUploadStatusDto> downloadVideo(DownloadRequestDto req) {
+        String id = req.getUrl();
+        DownloadItemDbo item = new DownloadItemDbo();
+        item.setStatus(DownloadStatuses.DOWNLOAD_STATUS_CREATED);
+        item.setType(DOWNLOAD_TYPE_YOUTUBE);
         item.setPartUrl(id);
         item.setUrl(getYoutubeUrlById(id));
         item.setCreatedDate(LocalDateTime.now());
 
-        return youtubeRepository.insert(item).flatMapMany(insert -> Flux.create(sink -> {
+        return downloadRepository.insert(item).flatMapMany(insert -> Flux.create(sink -> {
             try {
                 ArrayList<String> objects = new ArrayList<>();
                 objects.add("youtube-dl");
@@ -80,7 +86,7 @@ public class YoutubeDownloader {
                         break;
                     }
 
-                    YoutubeUploadStatus youtubeUploadStatus = new YoutubeUploadStatus();
+                    DownloadUploadStatusDto downloadUploadStatusDto = new DownloadUploadStatusDto();
 
                     // TODO: better
                     Matcher matcher = progressPattern.matcher(new String(buffer));
@@ -91,41 +97,50 @@ public class YoutubeDownloader {
                     String percentage = matcher.group("percentage");
                     String size = matcher.group("size");
                     if (percentage != null) {
-                        youtubeUploadStatus.setPercent(Double.valueOf(percentage.replace("%", "")));
-                        youtubeUploadStatus.setMsg(size);
-                        sink.next(youtubeUploadStatus);
+                        downloadUploadStatusDto.setPercent(Double.valueOf(percentage.replace("%", "")));
+                        downloadUploadStatusDto.setMsg(size);
+                        downloadUploadStatusDto.setDownloadId(insert.getId().toString());
+                        sink.next(downloadUploadStatusDto);
 
-                        insert.setStatus("DOWNLOADING");
-                        insert.setUploadedPercentage(youtubeUploadStatus.getPercent());
+                        insert.setStatus(DownloadStatuses.DOWNLOAD_STATUS_DOWNLOADING);
+                        insert.setUploadedPercentage(downloadUploadStatusDto.getPercent());
                         item.setLastUpdateDate(LocalDateTime.now());
-                        // TODO: block of optimistic
-                        youtubeRepository.save(insert).subscribe();
+                        // TODO: block or optimistic update; order must be matter
+                        downloadRepository.save(insert).subscribe();
                     }
                 }
 
-                insert.setStatus("DONE");
+                insert.setStatus(DownloadStatuses.DOWNLOAD_STATUS_DONE);
                 item.setLastUpdateDate(LocalDateTime.now());
-                youtubeRepository.save(insert).flatMap(l -> {
+                downloadRepository.save(insert).flatMap(l -> {
                     try {
                         p.waitFor();
                     } catch (InterruptedException e) {
 
-                        insert.setStatus("ERROR");
-                        item.setLastUpdateDate(LocalDateTime.now());
-                        youtubeRepository.save(insert).subscribe();
+                        sendError(item, insert);
                         logger.error("Error download youtube video {}", id, e);
                     }
                     sink.complete();
                     return Mono.empty();
                 }).subscribe();
             } catch (Exception e) {
-                insert.setStatus("ERROR");
-                item.setLastUpdateDate(LocalDateTime.now());
-                youtubeRepository.save(insert).subscribe();
+                sendError(item, insert);
                 logger.error("Error download youtube video {}", id, e);
             }
         }));
 
+    }
+
+    @Override
+    public String getType() {
+        return DOWNLOAD_TYPE_YOUTUBE;
+    }
+
+    private void sendError(DownloadItemDbo item, DownloadItemDbo insert) {
+        insert.setStatus(DownloadStatuses.DOWNLOAD_STATUS_ERROR);
+        item.setLastUpdateDate(LocalDateTime.now());
+        // TODO: block or optimistic update
+        downloadRepository.save(insert).subscribe();
     }
 
 }

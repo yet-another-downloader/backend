@@ -1,4 +1,4 @@
-package com.nbakaev.yad.gateway.youtube;
+package com.nbakaev.yad.gateway.download;
 
 import lombok.Data;
 import org.bson.types.ObjectId;
@@ -7,7 +7,7 @@ import org.springframework.data.annotation.Id;
 import java.time.LocalDateTime;
 
 @Data
-public class YoutubeItemDbo {
+public class DownloadItemDbo {
 
     @Id
     private ObjectId id;

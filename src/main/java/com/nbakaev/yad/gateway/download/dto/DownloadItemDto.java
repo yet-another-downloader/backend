@@ -1,11 +1,11 @@
-package com.nbakaev.yad.gateway.youtube;
+package com.nbakaev.yad.gateway.download.dto;
 
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Data
-public class YoutubeItemDto {
+public class DownloadItemDto {
 
     private String id;
 

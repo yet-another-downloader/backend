@@ -1,4 +1,4 @@
-package com.nbakaev.yad.gateway;
+package com.nbakaev.yad.gateway.security;
 
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.core.Authentication;
