@@ -21,23 +21,24 @@ public class DownloaderController {
         this.downloaderService = downloaderService;
     }
 
-    @PostMapping("")
-    Mono<Void> create(@RequestBody Mono<DownloadItemDto> personStream) {
-        return this.downloadRepository.insert( personStream.map(this::mapYoutubeItemDtoToDBo) ).then();
-    }
+//    @PostMapping("")
+//    Mono<Void> create(@RequestBody Mono<DownloadItemDto> personStream) {
+//        return this.downloadRepository.insert( personStream.map(this::mapYoutubeItemDtoToDBo) ).then();
+//    }
 
     @GetMapping("/list_items")
     Flux<DownloadItemDto> list() {
         return this.downloadRepository.findAll().map(this::mapYoutubeItemDboToDto);
     }
 
-    @GetMapping("/person/{id}")
+    @GetMapping("/item/{id}")
     Mono<DownloadItemDto> findById(@PathVariable String id) {
         return this.downloadRepository.findOneById(id).map(this::mapYoutubeItemDboToDto);
     }
 
+    // TODO: post
     @GetMapping(value = "/download_video/{id}/{type}", produces = "application/stream+json")
-    Flux<DownloadUploadStatusDto> downloadVideo(@PathVariable("id") String id, @PathVariable("type") String type) {
+    Flux<DownloadUploadStatusDto> download(@PathVariable("id") String id, @PathVariable("type") String type) {
         DownloadRequestDto downloadRequestDto = new DownloadRequestDto();
         downloadRequestDto.setUrl(id);
         downloadRequestDto.setType(type);
