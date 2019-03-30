@@ -35,7 +35,7 @@ function buildSpringBoot {
     ${MVN_PARAMS} clean package -DskipTests=true
 
     curl -L https://yt-dl.org/downloads/latest/youtube-dl -o youtube-dl
-    chmod + x youtube-dl
+    chmod +x youtube-dl
 
     DOCKER_IMAGE=`getDockerRepository``getDockerArtifactName`
     DOCKER_JOB_IMAGE_TAG=${DOCKER_IMAGE}:${BUILD_NUMBER}
