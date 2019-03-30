@@ -1,11 +1,11 @@
-FROM openjdk:11-jre-slim
+FROM openjdk:11.0.2-jre-stretch
 VOLUME /tmp
 
 ARG JAR_FILE
 ADD ${JAR_FILE} app.jar
 ADD youtube-dl /bin
 
-RUN apt install -y python ffmpeg && youtube-dl --version
+RUN apt update && apt install -y python ffmpeg && youtube-dl --version
 
 EXPOSE 8080
 
