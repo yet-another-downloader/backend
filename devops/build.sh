@@ -2,7 +2,7 @@
 
 cd ../
 
-export $HOME_FOLDER=`pwd`
+export HOME_FOLDER=`pwd`
 
 export CI_DEPLOY_TAG=${BUILD_NUMBER}
 
