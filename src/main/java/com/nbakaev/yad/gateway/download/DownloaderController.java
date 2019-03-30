@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-@RequestMapping("/v1/downloader")
+@RequestMapping("/api/v1/downloader")
 @RestController
 public class DownloaderController {
 
