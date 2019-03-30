@@ -32,6 +32,8 @@ function getArtifactFinalName {
 
 function buildSpringBoot {
 
+    ${MVN_PARAMS} clean package -DskipTests=true
+
     DOCKER_IMAGE=`getDockerRepository``getDockerArtifactName`
     DOCKER_JOB_IMAGE_TAG=${DOCKER_IMAGE}:${BUILD_NUMBER}
     echo "TAG: ${DOCKER_JOB_IMAGE_TAG}"

@@ -1,11 +1,8 @@
 FROM openjdk:11.0.2-jre-stretch
 VOLUME /tmp
 
-# todo: multistage build
-RUN mvn clean package -DskipTests=true
-
 ARG JAR_FILE
-RUN cp ${JAR_FILE} app.jar
+ADD ${JAR_FILE} app.jar
 
 EXPOSE 8080
 
