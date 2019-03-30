@@ -7,7 +7,7 @@ export HOME_FOLDER=`pwd`
 export CI_DEPLOY_TAG=${BUILD_NUMBER}
 
 echo "Create docker config"
-mkdir /root/.docker
+mkdir -p /root/.docker
 
 set -e
 
