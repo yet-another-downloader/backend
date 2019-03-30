@@ -42,7 +42,7 @@ function buildSpringBoot {
     echo "TAG: ${DOCKER_JOB_IMAGE_TAG}"
 
     echo "Tag pipeline job tag"
-    docker build -t $DOCKER_JOB_IMAGE_TAG --build-arg JAR_FILE=target/`getArtifactFinalName`-exec.jar .
+    docker build -t $DOCKER_JOB_IMAGE_TAG --build-arg JAR_FILE=target/`getArtifactFinalName`.jar .
     docker push $DOCKER_JOB_IMAGE_TAG
 
     if [[ "${CI_COMMIT_REF_NAME}" == "master" ]];then
