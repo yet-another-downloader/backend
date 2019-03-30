@@ -19,7 +19,7 @@ echo $MAVEN_CONFIG > /opt/maven_settings_yad.xml
 MVN_PARAMS='/opt/buildagent/tools/maven3/bin/mvn -s /opt/maven_settings_yad.xml -B'
 
 function getDockerRepository {
-   echo 'docker-local.artifactory.corp.nbakaev.com'
+   echo 'docker-local.artifactory.corp.nbakaev.com/'
 }
 
 function getDockerArtifactName {
