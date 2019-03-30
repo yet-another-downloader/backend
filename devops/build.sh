@@ -1,8 +1,22 @@
 #!/usr/bin/env bash
 
-set -e
+cd ../
 
 export $HOME_FOLDER=`pwd`
+
+export CI_DEPLOY_TAG=${BUILD_NUMBER}
+
+echo "Create docker config"
+mkdir /root/.docker
+
+set -e
+
+# deploy dockers
+echo $DOCKER_AUTH_CONFIG > /root/.docker/config.json
+
+echo $MAVEN_CONFIG > /opt/maven_settings_smz.xml
+
+MVN_PARAMS='-s /opt/maven_settings_smz.xml -B'
 
 function getDockerRepository {
    echo docker-local.artifactory.corp.nbakaev.com
@@ -17,10 +31,9 @@ function getArtifactFinalName {
 }
 
 function buildSpringBoot {
-    mvn clean package -DskipTests=true
 
     DOCKER_IMAGE=`getDockerRepository``getDockerArtifactName`
-    DOCKER_JOB_IMAGE_TAG=${DOCKER_IMAGE}:${CI_PIPELINE_IID}
+    DOCKER_JOB_IMAGE_TAG=${DOCKER_IMAGE}:${BUILD_NUMBER}
     echo "TAG: ${DOCKER_JOB_IMAGE_TAG}"
 
     echo "Tag pipeline job tag"
