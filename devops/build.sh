@@ -16,18 +16,18 @@ echo $DOCKER_AUTH_CONFIG > /root/.docker/config.json
 
 echo $MAVEN_CONFIG > /opt/maven_settings_yad.xml
 
-MVN_PARAMS='-s /opt/maven_settings_yad.xml -B'
+MVN_PARAMS='/opt/buildagent/tools/maven3/bin/mvn -s /opt/maven_settings_yad.xml -B'
 
 function getDockerRepository {
    echo 'docker-local.artifactory.corp.nbakaev.com'
 }
 
 function getDockerArtifactName {
-    mvn ${MVN_PARAMS} org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=docker.image.name 2>/dev/null | grep -Ev '(^\[|Download\w+:)'
+    ${MVN_PARAMS} org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=docker.image.name 2>/dev/null | grep -Ev '(^\[|Download\w+:)'
 }
 
 function getArtifactFinalName {
-    mvn ${MVN_PARAMS} org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.build.finalName 2>/dev/null | grep -Ev '(^\[|Download\w+:)'
+    ${MVN_PARAMS} org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.build.finalName 2>/dev/null | grep -Ev '(^\[|Download\w+:)'
 }
 
 function buildSpringBoot {
