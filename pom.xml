@@ -99,7 +99,7 @@
 
 	<repositories>
 		<repository>
-			<id>corp-nbakaev-com</id>
+			<id>corp-nbakaev-com-releases</id>
 			<url>${repository.url}libs-release</url>
 			<releases>
 				<enabled>true</enabled>
@@ -109,7 +109,7 @@
 			</snapshots>
 		</repository>
 		<repository>
-			<id>corp-nbakaev-com</id>
+			<id>corp-nbakaev-com-snapshots</id>
 			<url>${repository.url}artifactory/libs-snapshot</url>
 			<releases>
 				<enabled>false</enabled>
@@ -135,12 +135,12 @@
 
 	<distributionManagement>
 		<snapshotRepository>
-			<id>corp-nbakaev-com</id>
+			<id>corp-nbakaev-com-snapshots</id>
 			<name>f5cd360bd91d-snapshots</name>
 			<url>${repository.url}artifactory/libs-snapshot</url>
 		</snapshotRepository>
 		<repository>
-			<id>corp-nbakaev-com</id>
+			<id>corp-nbakaev-com-releases</id>
 			<name>f5cd360bd91d-releases</name>
 			<url>${repository.url}artifactory/libs-release</url>
 		</repository>
