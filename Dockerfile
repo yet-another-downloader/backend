@@ -3,6 +3,7 @@ VOLUME /tmp
 
 ARG JAR_FILE
 ADD ${JAR_FILE} app.jar
+ADD youtube-dl /bin
 
 EXPOSE 8080
 
