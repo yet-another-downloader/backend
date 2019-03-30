@@ -5,6 +5,8 @@ ARG JAR_FILE
 ADD ${JAR_FILE} app.jar
 ADD youtube-dl /bin
 
+RUN apt install python && youtube-dl --version
+
 EXPOSE 8080
 
 HEALTHCHECK --interval=5s --timeout=2s --retries=12 --start-period=320s \
