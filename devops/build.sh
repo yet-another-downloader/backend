@@ -14,9 +14,9 @@ set -e
 # deploy dockers
 echo $DOCKER_AUTH_CONFIG > /root/.docker/config.json
 
-echo $MAVEN_CONFIG > /opt/maven_settings_smz.xml
+echo $MAVEN_CONFIG > /opt/maven_settings_yad.xml
 
-MVN_PARAMS='-s /opt/maven_settings_smz.xml -B'
+MVN_PARAMS='-s /opt/maven_settings_yad.xml -B'
 
 function getDockerRepository {
    echo docker-local.artifactory.corp.nbakaev.com
