@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-if [ -e "$CIFS_PARAMS" ]; then
+if [ "$CIFS_PARAMS" != "" ]
+then
     mount -t cifs -o $CIFS_PARAMS
 else
     echo "No cifs params"
