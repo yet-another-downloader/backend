@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +28,8 @@ public class YoutubeDownloader implements GenericDownloader {
     private static final Logger logger = LoggerFactory.getLogger(YoutubeDownloader.class);
 
     private final DownloadRepository downloadRepository;
+
+    private final Scheduler downloadBlockingSchedulers = Schedulers.elastic();
 
     public YoutubeDownloader(YoutubePropertyConfiguration config, DownloadRepository downloadRepository) throws IOException, InterruptedException {
 
@@ -52,7 +56,7 @@ public class YoutubeDownloader implements GenericDownloader {
     }
 
     private String getYoutubeUrlById(String id) {
-       return  "https://www.youtube.com/watch?v=" + id;
+        return "https://www.youtube.com/watch?v=" + id;
     }
 
     @Override
@@ -75,6 +79,9 @@ public class YoutubeDownloader implements GenericDownloader {
 
                 ProcessBuilder processBuilder = new ProcessBuilder(objects);
                 Process p = processBuilder.start();
+
+                logger.info("Start download youtube {}", String.join(" ", objects));
+
                 InputStream inputStream = p.getInputStream();
 
                 byte[] buffer = new byte[1000];
@@ -113,18 +120,20 @@ public class YoutubeDownloader implements GenericDownloader {
                 insert.setStatus(DownloadStatuses.DOWNLOAD_STATUS_DONE);
                 item.setLastUpdateDate(LocalDateTime.now());
                 downloadRepository.save(insert).flatMap(l -> {
-                    try {
-                        p.waitFor();
-                    } catch (InterruptedException e) {
-
-                        sendError(item, insert);
-                        logger.error("Error download youtube video {}", id, e);
-                    }
-                    sink.complete();
+                    downloadBlockingSchedulers.schedule(() -> {
+                        try {
+                            p.waitFor();
+                        } catch (InterruptedException e) {
+                            sendError(e, id, item, insert);
+                        } finally {
+                            logger.info("Completed download id={}", id);
+                            sink.complete();
+                        }
+                    });
                     return Mono.empty();
                 }).subscribe();
             } catch (Exception e) {
-                sendError(item, insert);
+                sendError(e, id, item, insert);
                 logger.error("Error download youtube video {}", id, e);
             }
         }));
@@ -136,7 +145,9 @@ public class YoutubeDownloader implements GenericDownloader {
         return DOWNLOAD_TYPE_YOUTUBE;
     }
 
-    private void sendError(DownloadItemDbo item, DownloadItemDbo insert) {
+    private void sendError(Exception e, String id, DownloadItemDbo item, DownloadItemDbo insert) {
+        logger.error("Error download youtube video {}", id, e);
+
         insert.setStatus(DownloadStatuses.DOWNLOAD_STATUS_ERROR);
         item.setLastUpdateDate(LocalDateTime.now());
         // TODO: block or optimistic update
