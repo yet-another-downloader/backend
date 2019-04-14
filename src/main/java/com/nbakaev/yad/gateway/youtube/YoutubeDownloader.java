@@ -73,8 +73,13 @@ public class YoutubeDownloader implements GenericDownloader {
             try {
                 ArrayList<String> objects = new ArrayList<>();
                 objects.add("youtube-dl");
+
+                objects.add("-f");
+                objects.add("bestvideo+bestaudio/best");
+
                 objects.add("-o");
                 objects.add(outputPath);
+
                 objects.add(getYoutubeUrlById(id));
 
                 ProcessBuilder processBuilder = new ProcessBuilder(objects);
