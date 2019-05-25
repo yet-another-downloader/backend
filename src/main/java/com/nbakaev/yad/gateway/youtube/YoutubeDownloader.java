@@ -1,13 +1,15 @@
 package com.nbakaev.yad.gateway.youtube;
 
-import com.nbakaev.yad.gateway.download.*;
+import com.nbakaev.yad.gateway.download.DownloadItemDbo;
+import com.nbakaev.yad.gateway.download.DownloadRepository;
+import com.nbakaev.yad.gateway.download.DownloadStatuses;
+import com.nbakaev.yad.gateway.download.GenericDownloader;
 import com.nbakaev.yad.gateway.download.dto.DownloadRequestDto;
 import com.nbakaev.yad.gateway.download.dto.DownloadUploadStatusDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
@@ -15,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -69,9 +72,18 @@ public class YoutubeDownloader implements GenericDownloader {
         item.setUrl(getYoutubeUrlById(id));
         item.setCreatedDate(LocalDateTime.now());
 
-        return downloadRepository.insert(item).flatMapMany(insert -> Flux.create(sink -> {
+        return downloadRepository.insert(item).publishOn(downloadBlockingSchedulers).flatMapMany(insert -> Flux.create(sink -> {
+            var state = new Object() {
+                volatile InputStream inputStream = null;
+                volatile InputStream errorInputStream = null;
+                volatile Process p = null;
+
+                volatile Exception encouragedError = null;
+            };
+
             try {
-                ArrayList<String> objects = new ArrayList<>();
+                // TODO: insert shared between thread !!! - volatile
+                List<String> objects = new ArrayList<>();
                 objects.add("youtube-dl");
 
                 objects.add("-f");
@@ -83,63 +95,139 @@ public class YoutubeDownloader implements GenericDownloader {
                 objects.add(getYoutubeUrlById(id));
 
                 ProcessBuilder processBuilder = new ProcessBuilder(objects);
-                Process p = processBuilder.start();
 
                 logger.info("Start download youtube {}", String.join(" ", objects));
+                state.p = processBuilder.start();
 
-                InputStream inputStream = p.getInputStream();
+                logger.info("Start process PID={}", state.p.pid());
 
-                byte[] buffer = new byte[1000];
+                state.inputStream = state.p.getInputStream();
+                state.errorInputStream = state.p.getErrorStream();
 
-                while (p.isAlive()) {
-                    int read = inputStream.read(buffer);
-                    if (read == -1) {
-                        // closed stream
-                        break;
+                Thread outputMonitoring = new Thread(() -> {
+                    while (state.p.isAlive() && !Thread.currentThread().isInterrupted()) {
+                        byte[] buffer = new byte[1000];
+                        int read = 0;
+                        try {
+                            read = state.inputStream.read(buffer);
+
+                            if (read == -1) {
+                                // closed stream
+                                break;
+                            }
+
+                            // TODO: better
+                            String processOutputBuffer = new String(buffer);
+                            logger.trace("youtube-dl output {}", processOutputBuffer);
+                            Matcher matcher = progressPattern.matcher(processOutputBuffer);
+                            if (!matcher.find()) {
+                                continue;
+                            }
+
+                            String percentage = matcher.group("percentage");
+                            String size = matcher.group("size");
+                            if (percentage != null) {
+                                DownloadUploadStatusDto downloadUploadStatusDto = new DownloadUploadStatusDto();
+
+                                downloadUploadStatusDto.setPercent(Double.valueOf(percentage.replace("%", "")));
+                                downloadUploadStatusDto.setMsg(size);
+                                downloadUploadStatusDto.setDownloadId(insert.getId().toString());
+                                sink.next(downloadUploadStatusDto);
+
+                                insert.setStatus(DownloadStatuses.DOWNLOAD_STATUS_DOWNLOADING);
+                                insert.setUploadedPercentage(downloadUploadStatusDto.getPercent());
+                                item.setLastUpdateDate(LocalDateTime.now());
+                                // TODO: block or optimistic update; order must be matter
+                                downloadRepository.save(insert).subscribe();
+                            }
+                        } catch (IOException e) {
+                            logger.error("Error monitoring id={}", insert.getId(), e);
+                            state.encouragedError = e;
+                            state.p.destroy();
+                        }
                     }
+                });
 
-                    DownloadUploadStatusDto downloadUploadStatusDto = new DownloadUploadStatusDto();
+                Thread errorMonitoring = new Thread(() -> {
+                    while (state.p.isAlive() && !Thread.currentThread().isInterrupted()) {
+                        byte[] buffer = new byte[1000];
+                        int read = 0;
+                        try {
+                            read = state.errorInputStream.read(buffer);
 
-                    // TODO: better
-                    Matcher matcher = progressPattern.matcher(new String(buffer));
-                    if (!matcher.find()) {
-                        continue;
+                            if (read == -1) {
+                                // closed stream
+                                break;
+                            }
+
+                            String processOutputBuffer = new String(buffer);
+                            logger.error("youtube-dl error output {}", processOutputBuffer);
+                            state.encouragedError = new RuntimeException(processOutputBuffer);
+
+                            DownloadUploadStatusDto downloadUploadStatusDto = new DownloadUploadStatusDto();
+
+                            downloadUploadStatusDto.setMsg(processOutputBuffer);
+                            downloadUploadStatusDto.setDownloadId(insert.getId().toString());
+                            sink.next(downloadUploadStatusDto);
+
+                            insert.setStatus(DownloadStatuses.DOWNLOAD_STATUS_ERROR);
+                            item.setLastUpdateDate(LocalDateTime.now());
+                            // TODO: block or optimistic update; order must be matter
+                            downloadRepository.save(insert).subscribe();
+
+                            // destroy download process on error
+                            state.p.destroy();
+                        } catch (IOException e) {
+                            logger.error("Error errorMonitoring id={}", insert.getId(), e);
+                            state.encouragedError = e;
+                            state.p.destroy();
+                        }
                     }
+                });
 
-                    String percentage = matcher.group("percentage");
-                    String size = matcher.group("size");
-                    if (percentage != null) {
-                        downloadUploadStatusDto.setPercent(Double.valueOf(percentage.replace("%", "")));
-                        downloadUploadStatusDto.setMsg(size);
-                        downloadUploadStatusDto.setDownloadId(insert.getId().toString());
-                        sink.next(downloadUploadStatusDto);
+                outputMonitoring.setName("youtube-dl-" + insert.getId());
+                outputMonitoring.start();
 
-                        insert.setStatus(DownloadStatuses.DOWNLOAD_STATUS_DOWNLOADING);
-                        insert.setUploadedPercentage(downloadUploadStatusDto.getPercent());
-                        item.setLastUpdateDate(LocalDateTime.now());
-                        // TODO: block or optimistic update; order must be matter
-                        downloadRepository.save(insert).subscribe();
-                    }
+                errorMonitoring.setName("youtube-dl-error-mon-" + insert.getId());
+                errorMonitoring.start();
+
+                state.p.waitFor();
+
+                outputMonitoring.interrupt();
+                errorMonitoring.interrupt();
+
+                if (state.encouragedError == null) {
+                    insert.setStatus(DownloadStatuses.DOWNLOAD_STATUS_DONE);
+                    item.setLastUpdateDate(LocalDateTime.now());
+
+                    downloadRepository.save(insert).subscribe(re -> {
+                        logger.info("Completed download id={}", id);
+                        sink.complete();
+                    });
+                } else {
+                    throw state.encouragedError;
                 }
 
-                insert.setStatus(DownloadStatuses.DOWNLOAD_STATUS_DONE);
-                item.setLastUpdateDate(LocalDateTime.now());
-                downloadRepository.save(insert).flatMap(l -> {
-                    downloadBlockingSchedulers.schedule(() -> {
-                        try {
-                            p.waitFor();
-                        } catch (InterruptedException e) {
-                            sendError(e, id, item, insert);
-                        } finally {
-                            logger.info("Completed download id={}", id);
-                            sink.complete();
-                        }
-                    });
-                    return Mono.empty();
-                }).subscribe();
             } catch (Exception e) {
                 sendError(e, id, item, insert);
                 logger.error("Error download youtube video {}", id, e);
+                sink.error(e);
+            } finally {
+                if (state.p != null && state.p.isAlive()) {
+                    state.p.destroy();
+                }
+
+                try {
+                    if (state.inputStream != null) {
+                        state.inputStream.close();
+                    }
+
+                    if (state.errorInputStream != null) {
+                        state.errorInputStream.close();
+                    }
+                } catch (IOException e) {
+                    logger.error("Error close resources", e);
+                }
             }
         }));
 
