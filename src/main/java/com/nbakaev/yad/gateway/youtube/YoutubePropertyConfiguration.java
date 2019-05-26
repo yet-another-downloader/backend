@@ -11,4 +11,8 @@ public class YoutubePropertyConfiguration {
 
     private String pathDownload;
 
+    private String format;
+
+    private String baseUrl;
+
 }

@@ -34,32 +34,40 @@ public class YoutubeDownloader implements GenericDownloader {
 
     private final Scheduler downloadBlockingSchedulers = Schedulers.elastic();
 
+    private final YoutubePropertyConfiguration config;
+
     public YoutubeDownloader(YoutubePropertyConfiguration config, DownloadRepository downloadRepository) throws IOException, InterruptedException {
+        testYoutubeDlOnClasspath();
 
         this.outputPath = config.getPathDownload();
+
+        this.config = config;
         this.downloadRepository = downloadRepository;
         logger.info("Default output path for Youtube {}", this.outputPath);
 
+        // tested on youtube-dl  >youtube-dl --version //2018.03.03
+        progressPattern = Pattern.compile("\\[download\\]\\s+(?<percentage>\\d+(?:\\.\\d+)?%)\\s+of\\s+(?<size>\\d+(?:\\.\\d+)?(?:K|M|G)iB)(?:\\s+at\\s+(?<speed>\\d+(?:\\.\\d+)?(?:K|M|G)iB\\/s))?(?:\\s+ETA\\s+(?<eta>[\\d]{2}:[\\d]{2}))?");
+    }
+
+    private void testYoutubeDlOnClasspath() throws IOException, InterruptedException {
         // TODO: if youtube-dl in PATH
-        ArrayList<String> objects = new ArrayList<>();
+        List<String> objects = new ArrayList<>();
         objects.add("youtube-dl");
         objects.add("--version");
 
-        ProcessBuilder processBuilder = new ProcessBuilder(objects);
+        var processBuilder = new ProcessBuilder(objects);
         processBuilder.inheritIO();
-        Process p = processBuilder.start();
+        var p = processBuilder.start();
 
         p.waitFor();
         int i = p.exitValue();
         if (i != 0) {
             throw new IOException("youtube-dl is not properly installed");
         }
-        // tested on youtube-dl  >youtube-dl --version //2018.03.03
-        progressPattern = Pattern.compile("\\[download\\]\\s+(?<percentage>\\d+(?:\\.\\d+)?%)\\s+of\\s+(?<size>\\d+(?:\\.\\d+)?(?:K|M|G)iB)(?:\\s+at\\s+(?<speed>\\d+(?:\\.\\d+)?(?:K|M|G)iB\\/s))?(?:\\s+ETA\\s+(?<eta>[\\d]{2}:[\\d]{2}))?");
     }
 
     private String getYoutubeUrlById(String id) {
-        return "https://www.youtube.com/watch?v=" + id;
+        return config.getBaseUrl() + id;
     }
 
     @Override
@@ -96,7 +104,7 @@ public class YoutubeDownloader implements GenericDownloader {
             objects.add("youtube-dl");
 
             objects.add("-f");
-            objects.add("bestvideo+bestaudio/best");
+            objects.add(config.getFormat());
 
             objects.add("-o");
             objects.add(outputPath);
