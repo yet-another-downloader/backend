@@ -7,4 +7,6 @@ public interface DownloadRepository extends ReactiveMongoRepository<DownloadItem
 
     Mono<DownloadItemDbo> findOneById(String id);
 
+    Mono<DownloadItemDbo> findFirstByPartUrlOrderByLastUpdateDateDesc(String url);
+
 }

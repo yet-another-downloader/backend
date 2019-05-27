@@ -82,7 +82,10 @@ public class YoutubeDownloader implements GenericDownloader {
             item.setCreatedDate(LocalDateTime.now());
 
             // use another Subscriber (do in background) to prevent cancel download on http error / page refresh
-            downloadRepository.insert(item).publishOn(downloadBlockingSchedulers).subscribe(insert -> {
+            // use existing download object (url part) if exists to continue download instead of creating new download
+            downloadRepository.findFirstByPartUrlOrderByLastUpdateDateDesc(req.getUrl())
+                    .switchIfEmpty(downloadRepository.insert(item))
+                    .publishOn(downloadBlockingSchedulers).subscribe(insert -> {
                 doDownload(sink, insert);
             }, sink::error);
         });
@@ -91,7 +94,7 @@ public class YoutubeDownloader implements GenericDownloader {
     private void doDownload(FluxSink<DownloadUploadStatusDto> sink, DownloadItemDbo insert) {
         // TODO: "insert" parameter is shared and mutated between threads use immutable ???
 
-        var youtubeVideoId = insert.getPartUrl() ;
+        var youtubeVideoId = insert.getPartUrl();
         var state = new Object() {
             volatile InputStream inputStream = null;
             volatile InputStream errorInputStream = null;
@@ -177,7 +180,13 @@ public class YoutubeDownloader implements GenericDownloader {
                         }
 
                         var processOutputBuffer = new String(buffer);
+
+                        if (processOutputBuffer.contains("WARNING:")) {
+                            logger.warn("youtube-dl warning {}", processOutputBuffer);
+                            continue;
+                        }
                         logger.error("youtube-dl error output {}", processOutputBuffer);
+
                         state.encouragedError = new RuntimeException(processOutputBuffer);
 
                         var downloadUploadStatusDto = new DownloadUploadStatusDto();
