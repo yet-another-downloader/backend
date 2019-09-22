@@ -3,6 +3,7 @@ package com.nbakaev.yad.gateway.download;
 import com.nbakaev.yad.gateway.download.dto.DownloadItemDto;
 import com.nbakaev.yad.gateway.download.dto.DownloadRequestDto;
 import com.nbakaev.yad.gateway.download.dto.DownloadUploadStatusDto;
+import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -11,15 +12,12 @@ import reactor.core.publisher.Mono;
 
 @RequestMapping("/api/v1/downloader")
 @RestController
+@RequiredArgsConstructor
 public class DownloaderController {
 
     private final DownloadRepository downloadRepository;
     private final DownloaderService downloaderService;
-
-    public DownloaderController(DownloadRepository downloadRepository, DownloaderService downloaderService) {
-        this.downloadRepository = downloadRepository;
-        this.downloaderService = downloaderService;
-    }
+    private final DownloadService downloadService;
 
 //    @PostMapping("")
 //    Mono<Void> create(@RequestBody Mono<DownloadItemDto> personStream) {
@@ -27,8 +25,8 @@ public class DownloaderController {
 //    }
 
     @GetMapping("/list_items")
-    Flux<DownloadItemDto> list() {
-        return this.downloadRepository.findAll().map(this::mapYoutubeItemDboToDto);
+    Flux<DownloadItemDto> list(@RequestParam(value = "sortBy", required = false) String sortBy) {
+        return this.downloadService.findAll(sortBy).map(this::mapYoutubeItemDboToDto);
     }
 
     @GetMapping("/item/{id}")
