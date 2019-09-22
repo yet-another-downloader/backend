@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
@@ -36,7 +37,11 @@ public class YoutubeDownloader implements GenericDownloader {
 
     private final YoutubePropertyConfiguration config;
 
-    public YoutubeDownloader(YoutubePropertyConfiguration config, DownloadRepository downloadRepository) throws IOException, InterruptedException {
+    private final YoutubeApiV3Service youtubeApiV3Service;
+
+    public YoutubeDownloader(YoutubePropertyConfiguration config, DownloadRepository downloadRepository,
+                             YoutubeApiV3Service youtubeApiV3Service) throws IOException, InterruptedException {
+        this.youtubeApiV3Service = youtubeApiV3Service;
         testYoutubeDlOnClasspath();
 
         this.outputPath = config.getPathDownload();
@@ -72,7 +77,13 @@ public class YoutubeDownloader implements GenericDownloader {
 
     @Override
     public Flux<DownloadUploadStatusDto> downloadVideo(DownloadRequestDto req) {
-        return Flux.create(sink -> {
+        return youtubeApiV3Service.getById(req.getUrl()).flatMap(x -> {
+            if (x.getItems().size() != 1) {
+                logger.error("Err {}", x);
+                return Mono.error(new RuntimeException("Not one youtube element"));
+            }
+            return Mono.just(x);
+        }).flatMapMany(x -> Flux.create(sink -> {
             String id = req.getUrl();
             DownloadItemDbo item = new DownloadItemDbo();
             item.setStatus(DownloadStatuses.DOWNLOAD_STATUS_CREATED);
@@ -81,6 +92,14 @@ public class YoutubeDownloader implements GenericDownloader {
             item.setUrl(getYoutubeUrlById(id));
             item.setCreatedDate(LocalDateTime.now());
 
+            YoutubeVideoItemApi3Dto.Item.Snippet snippet = x.getItems().get(0).getSnippet();
+            YoutubeVideoItemApi3Dto.Item.Snippet.ThumbnailItem thumbnail = snippet.getThumbnails().get("default");
+            if (thumbnail != null) {
+                item.setImg(thumbnail.getUrl());
+            }
+
+            item.setName(snippet.getTitle());
+
             // use another Subscriber (do in background) to prevent cancel download on http error / page refresh
             // use existing download object (url part) if exists to continue download instead of creating new download
             downloadRepository.findFirstByPartUrlOrderByLastUpdateDateDesc(req.getUrl())
@@ -88,7 +107,7 @@ public class YoutubeDownloader implements GenericDownloader {
                     .publishOn(downloadBlockingSchedulers).subscribe(insert -> {
                 doDownload(sink, insert);
             }, sink::error);
-        });
+        }));
     }
 
     private void doDownload(FluxSink<DownloadUploadStatusDto> sink, DownloadItemDbo insert) {

@@ -3,6 +3,8 @@ package com.nbakaev.yad.gateway.download;
 import com.nbakaev.yad.gateway.download.dto.DownloadItemDto;
 import com.nbakaev.yad.gateway.download.dto.DownloadRequestDto;
 import com.nbakaev.yad.gateway.download.dto.DownloadUploadStatusDto;
+import com.nbakaev.yad.gateway.youtube.YoutubeApiV3Service;
+import com.nbakaev.yad.gateway.youtube.YoutubeVideoItemApi3Dto;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.util.StringUtils;
@@ -18,6 +20,7 @@ public class DownloaderController {
     private final DownloadRepository downloadRepository;
     private final DownloaderService downloaderService;
     private final DownloadService downloadService;
+    private final YoutubeApiV3Service youtubeApiV3Service;
 
 //    @PostMapping("")
 //    Mono<Void> create(@RequestBody Mono<DownloadItemDto> personStream) {
@@ -32,6 +35,11 @@ public class DownloaderController {
     @GetMapping("/item/{id}")
     Mono<DownloadItemDto> findById(@PathVariable String id) {
         return this.downloadRepository.findOneById(id).map(this::mapYoutubeItemDboToDto);
+    }
+
+    @GetMapping("/youtube_direct_details/id/{id}")
+    Mono<YoutubeVideoItemApi3Dto> getYoutubeDirectApi(@PathVariable String id) {
+        return this.youtubeApiV3Service.getById(id);
     }
 
     // TODO: post
