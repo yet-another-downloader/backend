@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 @Service
 public class DownloaderService {
 
-    private Map<String, GenericDownloader> all = new HashMap<>();
+    private final Map<String, GenericDownloader> all = new HashMap<>();
 
     public DownloaderService(List<GenericDownloader> allDownloaders) {
        allDownloaders.forEach(x -> {

@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.stream.Collectors;
+
 @RequestMapping("/api/v1/downloader")
 @RestController
 @RequiredArgsConstructor
@@ -28,8 +30,16 @@ public class DownloaderController {
 //    }
 
     @GetMapping("/list_items")
-    Flux<DownloadItemDto> list(@RequestParam(value = "sortBy", required = false) String sortBy) {
-        return this.downloadService.findAll(sortBy).map(this::mapYoutubeItemDboToDto);
+    Mono<DownloadItemResponseDto> list(@RequestParam(value = "sortBy", required = false) String sortBy,
+                                       @RequestParam(value = "limit", required = false) Integer limit,
+                                       @RequestParam(value = "offset", required = false) Long offset) {
+        return this.downloadService.findAll(sortBy, limit, offset).map(x -> {
+            var b = new DownloadItemResponseDto();
+            b.setCount(x.getCount());
+            b.setItems(x.getItems().stream().map(this::mapYoutubeItemDboToDto).collect(Collectors.toList()));
+
+            return b;
+        });
     }
 
     @GetMapping("/item/{id}")
