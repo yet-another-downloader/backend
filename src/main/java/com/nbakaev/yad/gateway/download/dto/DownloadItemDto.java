@@ -25,4 +25,6 @@ public class DownloadItemDto {
 
     private LocalDateTime lastUpdateDate;
 
+    private Long size;
+
 }

@@ -167,14 +167,18 @@ public class YoutubeDownloader implements GenericDownloader {
                         if (percentage != null) {
                             var downloadUploadStatusDto = new DownloadUploadStatusDto();
 
+                            var sizeInBytes = SizeParser.parse(size);
+
                             downloadUploadStatusDto.setPercent(Double.valueOf(percentage.replace("%", "")));
                             downloadUploadStatusDto.setMsg(size);
                             downloadUploadStatusDto.setDownloadId(insert.getId().toString());
+                            downloadUploadStatusDto.setSize(sizeInBytes);
                             sink.next(downloadUploadStatusDto);
 
                             insert.setStatus(DownloadStatuses.DOWNLOAD_STATUS_DOWNLOADING);
                             insert.setUploadedPercentage(downloadUploadStatusDto.getPercent());
                             insert.setLastUpdateDate(LocalDateTime.now());
+                            insert.setSize(sizeInBytes);
                             // TODO: block or optimistic update; order must be matter
                             downloadRepository.save(insert).subscribe();
                         }

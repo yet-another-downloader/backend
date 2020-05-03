@@ -11,4 +11,6 @@ public class DownloadUploadStatusDto {
 
     private String downloadId;
 
+    private Long size;
+
 }

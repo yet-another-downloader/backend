@@ -73,6 +73,7 @@ public class DownloaderController {
         dto.setPartUrl(dbo.getPartUrl());
         dto.setCreatedDate(dbo.getCreatedDate());
         dto.setLastUpdateDate(dbo.getLastUpdateDate());
+        dto.setSize(dbo.getSize());
 
         return dto;
     }

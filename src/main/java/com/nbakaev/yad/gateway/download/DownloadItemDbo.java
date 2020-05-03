@@ -30,5 +30,7 @@ public class DownloadItemDbo {
 
     private LocalDateTime lastUpdateDate;
 
+    private Long size;
+
 
 }
