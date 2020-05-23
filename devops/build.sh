@@ -16,6 +16,8 @@ echo $DOCKER_AUTH_CONFIG > /root/.docker/config.json
 echo $MAVEN_CONFIG > /opt/maven_settings_yad.xml
 
 # TODO: add inside docker image
+
+chmod +x /opt/buildagent/tools/idea/plugins/maven/lib/maven3/bin/mvn
 MVN_PARAMS='/opt/buildagent/tools/idea/plugins/maven/lib/maven3/bin/mvn -s /opt/maven_settings_yad.xml -B'
 
 function getDockerRepository {
