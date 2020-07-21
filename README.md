@@ -1,5 +1,7 @@
 # Yet Another Downloader
 
+Simple selfhosted downloader for youtube videos to local drive / NAS with web UI and REST API
+
  ![](https://github.com/yet-another-downloader/docs/raw/master/smartmockups_kcvs3x85.png)
 
 ## Running
