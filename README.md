@@ -14,15 +14,15 @@ TBD:
 
 TBD: Helm charts 
 
-## Tech stack
-
 ## Usage
 
 ### REST API
 
 #### Start download
 
-TBD: curl command
+TBD: curl command example
+
+## Tech stack
 
 ### Backend
 
@@ -35,7 +35,6 @@ TBD: curl command
 #### Download layer 
 
  - youtube-dl
-
 
 ### Frontend
 
