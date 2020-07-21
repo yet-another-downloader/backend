@@ -1,24 +1,43 @@
 # Yet Another Downloader
 
+ ![](https://github.com/yet-another-downloader/docs/raw/master/smartmockups_kcvs3x85.png)
+
+## Running
+
+### Docker Compose
+
+TBD:
+
+### Kubernetes 
+
+TBD: Helm charts 
+
 ## Tech stack
+
+## Usage
+
+### REST API
+
+#### Start download
+
+TBD: curl command
 
 ### Backend
 
 #### REST layer
 
- - Java 9 + Spring Boot 2 - multithreading
- - docker image
+ - Java 11 + Spring Boot 2
+ - Docker / Docker Compose / Kubernetes / Helm
  - ci teamcity 
- - kafka ??? / rabbitmq
 
 #### Download layer 
 
- - aria2 ??? http+bittorent
- - youtube-dl - watch later...
- - udemy-dl
- - coursera-dl
+ - youtube-dl
+
 
 ### Frontend
 
- - Angular 5, ng cli
+[see separate repo](https://github.com/yet-another-downloader/frontend)
+
+ - Angular 9, ng cli
  - bootstrap 4
