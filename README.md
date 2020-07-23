@@ -12,7 +12,7 @@ TBD:
 
 ### Kubernetes 
 
-TBD: Helm charts 
+[see Helm charts](https://github.com/yet-another-downloader/charts) 
 
 ## Usage
 
