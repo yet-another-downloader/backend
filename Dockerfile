@@ -1,4 +1,4 @@
-FROM openjdk:11.0.12-jre-stretch
+FROM openjdk:11.0.12-jre
 VOLUME /tmp
 
 ARG JAR_FILE
