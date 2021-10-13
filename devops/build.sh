@@ -33,7 +33,11 @@ function buildSpringBoot {
 
     ${MVN_PARAMS} clean package -DskipTests=true
 
-    curl -L https://yt-dl.org/downloads/latest/youtube-dl -o youtube-dl
+#    curl -L https://yt-dl.org/downloads/latest/youtube-dl -o youtube-dl
+
+#    use yt-dlp
+    curl -L https://github.com/yt-dlp/yt-dlp/releases/download/2021.10.10/yt-dlp -o youtube-dl
+
     chmod +x youtube-dl
 
     DOCKER_IMAGE=`getDockerRepository``getDockerArtifactName`
